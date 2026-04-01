@@ -2,6 +2,12 @@ HOST ?= localhost
 PORT ?= 4500
 LOG_FILE = /tmp/jekyll$(PORT).log
 PYTHON := venv/bin/python3
+YAML_PYTHON := $(shell \
+	if [ -x "$(PYTHON)" ] && "$(PYTHON)" -c "import yaml" >/dev/null 2>&1; then \
+		echo "$(PYTHON)"; \
+	elif python3 -c "import yaml" >/dev/null 2>&1; then \
+		echo "python3"; \
+	fi)
 
 SHELL = /bin/bash -c
 .SHELLFLAGS = -e
@@ -138,11 +144,21 @@ build: build-current
 # Multi-course file splitting
 split-courses:
 	@echo " ------ Splitting multi-course files... -------"
-	@python3 scripts/split_multi_course_files.py
+	@if [ -z "$(YAML_PYTHON)" ]; then \
+		echo "⚠ PyYAML not available; skipping split-courses"; \
+		echo "  Install with: pip install pyyaml"; \
+	else \
+		$(YAML_PYTHON) scripts/split_multi_course_files.py; \
+	fi
 
 clean-courses:
 	@echo "🧹 Cleaning course-specific files..."
-	@python3 scripts/split_multi_course_files.py clean
+	@if [ -z "$(YAML_PYTHON)" ]; then \
+		echo "⚠ PyYAML not available; skipping clean-courses"; \
+		echo "  Install with: pip install pyyaml"; \
+	else \
+		$(YAML_PYTHON) scripts/split_multi_course_files.py clean; \
+	fi
 
 # Notebook and DOCX conversion
 convert: $(MARKDOWN_FILES) convert-docx
